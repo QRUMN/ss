@@ -1,0 +1,36 @@
+[build]
+  command = "pip install -r requirements.txt && python build.py"
+  publish = "dist"
+  functions = "netlify/functions"
+
+[dev]
+  command = "python run.py"
+  port = 8888
+  publish = "dist"
+  framework = "#custom"
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
+[build.environment]
+  PYTHON_VERSION = "3.9"
+  NODE_VERSION = "18"
+
+# Enable CORS headers for API
+[[headers]]
+  for = "/api/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Methods = "GET, POST, PUT, DELETE, OPTIONS"
+    Access-Control-Allow-Headers = "Content-Type"
