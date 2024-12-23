@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="creator-dashboard">
+    <header class="dashboard-header">
+        <h1>Creator Dashboard</h1>
+        <div class="quick-actions">
+            <a href="{{ url_for('creator.create_post') }}" class="btn btn-primary">New Post</a>
+            <a href="{{ url_for('creator.manage_tiers') }}" class="btn btn-secondary">Manage Tiers</a>
+        </div>
+    </header>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <h3>Followers</h3>
+            <p class="stat-number">{{ stats.total_followers }}</p>
+            <span class="stat-trend">+{{ stats.new_followers_today }} today</span>
+        </div>
+        
+        <div class="stat-card">
+            <h3>Members</h3>
+            <p class="stat-number">{{ stats.total_members }}</p>
+            <span class="stat-trend">+{{ stats.new_members_this_month }} this month</span>
+        </div>
+        
+        <div class="stat-card">
+            <h3>Monthly Revenue</h3>
+            <p class="stat-number">${{ "%.2f"|format(stats.monthly_revenue) }}</p>
+            <span class="stat-trend">Next payout: {{ next_payout_date }}</span>
+        </div>
+        
+        <div class="stat-card">
+            <h3>Total Posts</h3>
+            <p class="stat-number">{{ stats.total_posts }}</p>
+            <span class="stat-trend">{{ stats.posts_this_month }} this month</span>
+        </div>
+    </div>
+
+    <div class="dashboard-grid">
+        <section class="recent-posts">
+            <h2>Recent Posts</h2>
+            <div class="post-list">
+                {% for post in recent_posts %}
+                <div class="post-card">
+                    <div class="post-header">
+                        <h3>{{ post.title }}</h3>
+                        <span class="post-type {{ post.type }}">{{ post.type }}</span>
+                    </div>
+                    <p class="post-preview">{{ post.content[:100] }}...</p>
+                    <div class="post-stats">
+                        <span>{{ post.likes_count }} likes</span>
+                        <span>{{ post.comments_count }} comments</span>
+                        <span>{{ post.created_at.strftime('%B %d, %Y') }}</span>
+                    </div>
+                    <a href="#" class="btn btn-text">View Details</a>
+                </div>
+                {% endfor %}
+            </div>
+            <a href="#" class="btn btn-text">View All Posts</a>
+        </section>
+
+        <section class="member-activity">
+            <h2>Recent Member Activity</h2>
+            <div class="activity-list">
+                {% for activity in recent_activity %}
+                <div class="activity-item">
+                    <img src="{{ activity.user.avatar_url }}" alt="{{ activity.user.name }}" class="avatar">
+                    <div class="activity-content">
+                        <p><strong>{{ activity.user.name }}</strong> {{ activity.action }}</p>
+                        <span class="activity-time">{{ activity.created_at.strftime('%B %d, %Y') }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+    </div>
+
+    <div class="engagement-section">
+        <h2>Engagement Overview</h2>
+        <div class="engagement-chart">
+            <!-- Add chart component here -->
+        </div>
+        <div class="engagement-metrics">
+            <div class="metric">
+                <h4>Average Engagement Rate</h4>
+                <p>{{ "%.1f"|format(engagement_rate) }}%</p>
+            </div>
+            <div class="metric">
+                <h4>Most Active Time</h4>
+                <p>{{ most_active_time }}</p>
+            </div>
+            <div class="metric">
+                <h4>Top Content Type</h4>
+                <p>{{ top_content_type }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Add your Chart.js initialization here
+</script>
+{% endblock %}

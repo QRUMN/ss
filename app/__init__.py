@@ -24,11 +24,12 @@ def create_app(config_name='default'):
     migrate.init_app(app, db)
 
     # Register blueprints
-    from app.routes import auth, events, admin, members
+    from app.routes import auth, events, admin, members, creator
     app.register_blueprint(auth.bp)
     app.register_blueprint(events.bp)
     app.register_blueprint(admin.bp)
     app.register_blueprint(members.bp)
+    app.register_blueprint(creator.bp)
 
     # User loader for Flask-Login
     from app.models.user import User

@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="manage-tiers">
+    <header class="page-header">
+        <h1>Manage Membership Tiers</h1>
+        <button class="btn btn-primary" onclick="showNewTierForm()">Create New Tier</button>
+    </header>
+
+    <div class="tiers-grid">
+        {% for tier in tiers %}
+        <div class="tier-card">
+            <div class="tier-header">
+                <h3>{{ tier.name }}</h3>
+                <span class="price">${{ "%.2f"|format(tier.price) }}/month</span>
+            </div>
+            
+            <div class="tier-content">
+                <p class="description">{{ tier.description }}</p>
+                
+                <h4>Benefits</h4>
+                <ul class="benefits-list">
+                    {% for feature in tier.features %}
+                    <li>{{ feature }}</li>
+                    {% endfor %}
+                </ul>
+                
+                <div class="tier-stats">
+                    <div class="stat">
+                        <span class="label">Members</span>
+                        <span class="value">{{ tier.member_count }}</span>
+                    </div>
+                    <div class="stat">
+                        <span class="label">Monthly Revenue</span>
+                        <span class="value">${{ "%.2f"|format(tier.monthly_revenue) }}</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="tier-actions">
+                <button class="btn btn-secondary" onclick="editTier('{{ tier.id }}')">Edit</button>
+                <button class="btn btn-danger" onclick="deleteTier('{{ tier.id }}')">Delete</button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- New Tier Form Modal -->
+    <div id="newTierModal" class="modal">
+        <div class="modal-content">
+            <h2>Create New Membership Tier</h2>
+            <form method="POST" class="tier-form">
+                <div class="form-group">
+                    <label for="name">Tier Name</label>
+                    <input type="text" id="name" name="name" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="price">Monthly Price ($)</label>
+                    <input type="number" id="price" name="price" step="0.01" min="0" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="description">Description</label>
+                    <textarea id="description" name="description" rows="4" required></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>Benefits</label>
+                    <div class="benefits-options">
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="exclusive_content" value="true">
+                            Exclusive Content Access
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="early_access" value="true">
+                            Early Access to Content
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="custom_badge" value="true">
+                            Custom Member Badge
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="priority_support" value="true">
+                            Priority Support
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="event_discount">Event Ticket Discount (%)</label>
+                    <input type="number" id="event_discount" name="event_discount" min="0" max="100" value="0">
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Tier</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function showNewTierForm() {
+    document.getElementById('newTierModal').style.display = 'block';
+}
+
+function closeModal() {
+    document.getElementById('newTierModal').style.display = 'none';
+}
+
+function editTier(tierId) {
+    // Implement edit functionality
+}
+
+function deleteTier(tierId) {
+    if (confirm('Are you sure you want to delete this tier? This action cannot be undone.')) {
+        // Implement delete functionality
+    }
+}
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+    if (event.target == document.getElementById('newTierModal')) {
+        closeModal();
+    }
+}
+</script>
+{% endblock %}
