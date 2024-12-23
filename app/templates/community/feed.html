@@ -1,0 +1,484 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="community-feed">
+    <div class="container">
+        <div class="feed-layout">
+            <!-- Main Feed -->
+            <div class="feed-main">
+                <!-- Create Post -->
+                <div class="card create-post pattern-border">
+                    <div class="post-form-header">
+                        <img src="{{ current_user.avatar_url }}" alt="{{ current_user.name }}" class="avatar">
+                        <button class="btn btn-text w-full text-left" onclick="showPostModal()">
+                            Share something with the community...
+                        </button>
+                    </div>
+                    <div class="post-form-actions">
+                        <button class="btn btn-text" onclick="showPostModal('image')">
+                            <i class="far fa-image"></i> Photo
+                        </button>
+                        <button class="btn btn-text" onclick="showPostModal('video')">
+                            <i class="far fa-play-circle"></i> Video
+                        </button>
+                        <button class="btn btn-text" onclick="showPostModal('event')">
+                            <i class="far fa-calendar"></i> Event
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Feed Filters -->
+                <div class="feed-filters">
+                    <div class="filter-tabs">
+                        <button class="tab active">All</button>
+                        <button class="tab">Following</button>
+                        <button class="tab">Events</button>
+                        <button class="tab">Media</button>
+                    </div>
+                    <div class="filter-actions">
+                        <select class="form-input">
+                            <option>Most Recent</option>
+                            <option>Most Popular</option>
+                            <option>Trending</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Feed Posts -->
+                <div class="feed-posts">
+                    {% for post in posts %}
+                    <div class="card post-card">
+                        <!-- Post Header -->
+                        <div class="post-header">
+                            <div class="post-author">
+                                <img src="{{ post.author.avatar_url }}" alt="{{ post.author.name }}" class="avatar">
+                                <div class="author-info">
+                                    <a href="{{ url_for('creator.profile', username=post.author.username) }}" class="author-name">
+                                        {{ post.author.name }}
+                                        {% if post.author.is_creator %}
+                                        <span class="badge badge-primary">Creator</span>
+                                        {% endif %}
+                                    </a>
+                                    <span class="post-time">{{ post.created_at.strftime('%B %d at %I:%M %p') }}</span>
+                                </div>
+                            </div>
+                            <div class="post-actions">
+                                <button class="btn btn-icon">
+                                    <i class="fas fa-ellipsis-h"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Post Content -->
+                        <div class="post-content">
+                            {% if post.content %}
+                            <div class="post-text">{{ post.content }}</div>
+                            {% endif %}
+
+                            {% if post.media_type == 'image' %}
+                            <div class="post-media">
+                                <img src="{{ post.media_url }}" alt="" class="post-image">
+                            </div>
+                            {% elif post.media_type == 'video' %}
+                            <div class="post-media">
+                                <video src="{{ post.media_url }}" controls class="post-video"></video>
+                            </div>
+                            {% elif post.media_type == 'event' %}
+                            <div class="post-event">
+                                <div class="event-preview">
+                                    <img src="{{ post.event.image_url }}" alt="{{ post.event.title }}">
+                                    <div class="event-info">
+                                        <h3>{{ post.event.title }}</h3>
+                                        <div class="event-meta">
+                                            <span><i class="far fa-calendar"></i> {{ post.event.start_date.strftime('%B %d, %Y') }}</span>
+                                            <span><i class="far fa-clock"></i> {{ post.event.start_time.strftime('%I:%M %p') }}</span>
+                                        </div>
+                                        <a href="{{ url_for('events.detail', event_id=post.event.id) }}" class="btn btn-primary">
+                                            Learn More
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Post Footer -->
+                        <div class="post-footer">
+                            <div class="interaction-stats">
+                                <span>{{ post.likes_count }} likes</span>
+                                <span>{{ post.comments_count }} comments</span>
+                                <span>{{ post.shares_count }} shares</span>
+                            </div>
+                            <div class="interaction-buttons">
+                                <button class="btn btn-text {% if post.is_liked %}text-primary{% endif %}" onclick="toggleLike('{{ post.id }}')">
+                                    <i class="{% if post.is_liked %}fas{% else %}far{% endif %} fa-heart"></i> Like
+                                </button>
+                                <button class="btn btn-text" onclick="focusComment('{{ post.id }}')">
+                                    <i class="far fa-comment"></i> Comment
+                                </button>
+                                <button class="btn btn-text" onclick="sharePost('{{ post.id }}')">
+                                    <i class="far fa-share-square"></i> Share
+                                </button>
+                            </div>
+
+                            <!-- Comments -->
+                            <div class="post-comments">
+                                {% if post.comments %}
+                                <div class="comments-list">
+                                    {% for comment in post.comments %}
+                                    <div class="comment">
+                                        <img src="{{ comment.author.avatar_url }}" alt="{{ comment.author.name }}" class="avatar avatar-sm">
+                                        <div class="comment-content">
+                                            <div class="comment-header">
+                                                <a href="#" class="comment-author">{{ comment.author.name }}</a>
+                                                <span class="comment-time">{{ comment.created_at.strftime('%B %d at %I:%M %p') }}</span>
+                                            </div>
+                                            <p class="comment-text">{{ comment.content }}</p>
+                                            <div class="comment-actions">
+                                                <button class="btn btn-text btn-sm">Like</button>
+                                                <button class="btn btn-text btn-sm">Reply</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+
+                                <!-- Comment Form -->
+                                <div class="comment-form">
+                                    <img src="{{ current_user.avatar_url }}" alt="{{ current_user.name }}" class="avatar avatar-sm">
+                                    <input type="text" class="form-input" placeholder="Write a comment..." id="comment-{{ post.id }}">
+                                    <button class="btn btn-primary btn-sm">Post</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <aside class="feed-sidebar">
+                <!-- Trending Topics -->
+                <div class="card trending-card">
+                    <h3>Trending Topics</h3>
+                    <div class="trending-topics">
+                        {% for topic in trending_topics %}
+                        <a href="#" class="trending-topic">
+                            <span class="topic-name">#{{ topic.name }}</span>
+                            <span class="topic-posts">{{ topic.posts_count }} posts</span>
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Upcoming Events -->
+                <div class="card events-card">
+                    <h3>Upcoming Events</h3>
+                    <div class="upcoming-events">
+                        {% for event in upcoming_events %}
+                        <a href="{{ url_for('events.detail', event_id=event.id) }}" class="event-preview">
+                            <img src="{{ event.image_url }}" alt="{{ event.title }}">
+                            <div class="event-info">
+                                <h4>{{ event.title }}</h4>
+                                <div class="event-meta">
+                                    <span><i class="far fa-calendar"></i> {{ event.start_date.strftime('%B %d') }}</span>
+                                    <span><i class="far fa-clock"></i> {{ event.start_time.strftime('%I:%M %p') }}</span>
+                                </div>
+                            </div>
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Suggested Creators -->
+                <div class="card creators-card">
+                    <h3>Suggested Creators</h3>
+                    <div class="suggested-creators">
+                        {% for creator in suggested_creators %}
+                        <div class="creator-preview">
+                            <img src="{{ creator.avatar_url }}" alt="{{ creator.name }}" class="avatar">
+                            <div class="creator-info">
+                                <a href="{{ url_for('creator.profile', username=creator.username) }}" class="creator-name">
+                                    {{ creator.name }}
+                                </a>
+                                <p class="creator-bio">{{ creator.bio[:50] }}...</p>
+                            </div>
+                            <button class="btn btn-secondary btn-sm" onclick="followCreator('{{ creator.id }}')">
+                                Follow
+                            </button>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </aside>
+        </div>
+    </div>
+</div>
+
+<!-- Create Post Modal -->
+<div id="postModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Create Post</h2>
+            <button class="modal-close" onclick="closePostModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="postForm" onsubmit="createPost(event)">
+                <div class="form-group">
+                    <textarea class="form-input" rows="4" placeholder="What's on your mind?" required></textarea>
+                </div>
+                
+                <div id="mediaPreview" class="media-preview"></div>
+                
+                <div class="form-group">
+                    <div class="post-options">
+                        <button type="button" class="btn btn-text" onclick="addMedia('image')">
+                            <i class="far fa-image"></i> Add Photo
+                        </button>
+                        <button type="button" class="btn btn-text" onclick="addMedia('video')">
+                            <i class="far fa-play-circle"></i> Add Video
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <select class="form-input">
+                        <option value="public">Public</option>
+                        <option value="followers">Followers Only</option>
+                        <option value="members">Members Only</option>
+                    </select>
+                </div>
+                
+                <button type="submit" class="btn btn-primary w-full">Post</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+.feed-layout {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: var(--space-xl);
+}
+
+.create-post {
+    margin-bottom: var(--space-xl);
+}
+
+.post-form-header {
+    display: flex;
+    gap: var(--space-md);
+    margin-bottom: var(--space-md);
+}
+
+.post-form-actions {
+    display: flex;
+    gap: var(--space-md);
+    padding-top: var(--space-md);
+    border-top: 1px solid var(--border-light);
+}
+
+.feed-filters {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-xl);
+}
+
+.filter-tabs {
+    display: flex;
+    gap: var(--space-md);
+}
+
+.post-card {
+    margin-bottom: var(--space-lg);
+}
+
+.post-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-md);
+}
+
+.post-author {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+}
+
+.post-media {
+    margin: var(--space-md) 0;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+}
+
+.post-image,
+.post-video {
+    width: 100%;
+    max-height: 500px;
+    object-fit: cover;
+}
+
+.post-event {
+    margin: var(--space-md) 0;
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+}
+
+.event-preview {
+    display: flex;
+    gap: var(--space-md);
+}
+
+.event-preview img {
+    width: 200px;
+    height: 150px;
+    object-fit: cover;
+}
+
+.interaction-stats {
+    display: flex;
+    gap: var(--space-md);
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    margin-bottom: var(--space-md);
+}
+
+.interaction-buttons {
+    display: flex;
+    gap: var(--space-md);
+    padding: var(--space-md) 0;
+    border-top: 1px solid var(--border-light);
+    border-bottom: 1px solid var(--border-light);
+    margin-bottom: var(--space-md);
+}
+
+.comment {
+    display: flex;
+    gap: var(--space-md);
+    margin-bottom: var(--space-md);
+}
+
+.comment-content {
+    flex: 1;
+    background-color: var(--bg-tertiary);
+    padding: var(--space-md);
+    border-radius: var(--radius-md);
+}
+
+.comment-form {
+    display: flex;
+    gap: var(--space-md);
+    align-items: center;
+    margin-top: var(--space-md);
+}
+
+.trending-topic {
+    display: flex;
+    justify-content: space-between;
+    padding: var(--space-sm) 0;
+    color: var(--text-primary);
+}
+
+.event-preview {
+    display: flex;
+    gap: var(--space-md);
+    padding: var(--space-md) 0;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.creator-preview {
+    display: flex;
+    gap: var(--space-md);
+    align-items: center;
+    padding: var(--space-md) 0;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.media-preview {
+    margin: var(--space-md) 0;
+}
+
+.media-preview img,
+.media-preview video {
+    max-width: 100%;
+    border-radius: var(--radius-md);
+}
+
+@media (max-width: 1024px) {
+    .feed-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .filter-tabs {
+        overflow-x: auto;
+        padding-bottom: var(--space-sm);
+    }
+    
+    .interaction-buttons {
+        justify-content: space-around;
+    }
+    
+    .event-preview {
+        flex-direction: column;
+    }
+    
+    .event-preview img {
+        width: 100%;
+        height: 200px;
+    }
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function showPostModal(type = 'text') {
+    document.getElementById('postModal').style.display = 'block';
+}
+
+function closePostModal() {
+    document.getElementById('postModal').style.display = 'none';
+}
+
+function createPost(event) {
+    event.preventDefault();
+    // Implement post creation
+}
+
+function toggleLike(postId) {
+    // Implement like functionality
+}
+
+function focusComment(postId) {
+    document.getElementById(`comment-${postId}`).focus();
+}
+
+function sharePost(postId) {
+    // Implement share functionality
+}
+
+function followCreator(creatorId) {
+    // Implement follow functionality
+}
+
+function addMedia(type) {
+    // Implement media upload
+}
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+    if (event.target == document.getElementById('postModal')) {
+        closePostModal();
+    }
+}
+</script>
+{% endblock %}

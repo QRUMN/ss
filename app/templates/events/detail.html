@@ -1,0 +1,504 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="event-detail">
+    <div class="event-header pattern-border">
+        <div class="container">
+            <div class="event-hero">
+                <div class="event-info">
+                    <div class="event-meta">
+                        <span class="event-category badge badge-secondary">{{ event.category }}</span>
+                        {% if event.is_live %}
+                        <span class="badge badge-primary">Live Now</span>
+                        {% endif %}
+                    </div>
+                    <h1 class="event-title">{{ event.title }}</h1>
+                    <div class="event-datetime">
+                        <div class="datetime-item">
+                            <i class="far fa-calendar"></i>
+                            <span>{{ event.start_date.strftime('%B %d, %Y') }}</span>
+                        </div>
+                        <div class="datetime-item">
+                            <i class="far fa-clock"></i>
+                            <span>{{ event.start_time.strftime('%I:%M %p') }} - {{ event.end_time.strftime('%I:%M %p') }}</span>
+                        </div>
+                        <div class="datetime-item">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <span>{{ event.location }}</span>
+                        </div>
+                    </div>
+                    <div class="event-actions">
+                        <div class="ticket-info">
+                            <span class="ticket-price">{% if event.price == 0 %}Free{% else %}${{ "%.2f"|format(event.price) }}{% endif %}</span>
+                            {% if event.tickets_remaining %}
+                            <span class="tickets-remaining">{{ event.tickets_remaining }} tickets remaining</span>
+                            {% else %}
+                            <span class="sold-out">Sold Out</span>
+                            {% endif %}
+                        </div>
+                        {% if event.tickets_remaining %}
+                        <button class="btn btn-primary btn-lg" onclick="showTicketModal()">
+                            Get Tickets
+                        </button>
+                        {% endif %}
+                        <button class="btn btn-secondary btn-lg">
+                            <i class="far fa-calendar-plus"></i> Add to Calendar
+                        </button>
+                    </div>
+                </div>
+                <div class="event-image">
+                    <img src="{{ event.image_url }}" alt="{{ event.title }}">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="event-content">
+            <div class="content-main">
+                <!-- Event Description -->
+                <section class="event-section card">
+                    <h2>About This Event</h2>
+                    <div class="rich-text">
+                        {{ event.description|safe }}
+                    </div>
+                    {% if event.tags %}
+                    <div class="event-tags">
+                        {% for tag in event.tags %}
+                        <span class="tag">{{ tag }}</span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </section>
+
+                <!-- Schedule -->
+                {% if event.schedule %}
+                <section class="event-section card">
+                    <h2>Schedule</h2>
+                    <div class="schedule-timeline">
+                        {% for item in event.schedule %}
+                        <div class="timeline-item">
+                            <div class="timeline-time">{{ item.time }}</div>
+                            <div class="timeline-content">
+                                <h3>{{ item.title }}</h3>
+                                <p>{{ item.description }}</p>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </section>
+                {% endif %}
+
+                <!-- Performers/Speakers -->
+                {% if event.performers %}
+                <section class="event-section card">
+                    <h2>Featured Performers</h2>
+                    <div class="performers-grid">
+                        {% for performer in event.performers %}
+                        <div class="performer-card">
+                            <img src="{{ performer.image_url }}" alt="{{ performer.name }}" class="performer-image">
+                            <div class="performer-info">
+                                <h3>{{ performer.name }}</h3>
+                                <p class="performer-role">{{ performer.role }}</p>
+                                <p class="performer-bio">{{ performer.bio }}</p>
+                                {% if performer.social_links %}
+                                <div class="performer-social">
+                                    {% for platform, url in performer.social_links.items() %}
+                                    <a href="{{ url }}" target="_blank" class="social-link">
+                                        <i class="fab fa-{{ platform.lower() }}"></i>
+                                    </a>
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </section>
+                {% endif %}
+
+                <!-- Reviews -->
+                <section class="event-section card">
+                    <h2>Reviews</h2>
+                    <div class="reviews-container">
+                        {% for review in event.reviews %}
+                        <div class="review-card">
+                            <div class="review-header">
+                                <img src="{{ review.user.avatar_url }}" alt="{{ review.user.name }}" class="avatar">
+                                <div class="review-meta">
+                                    <span class="review-author">{{ review.user.name }}</span>
+                                    <div class="review-rating">
+                                        {% for i in range(5) %}
+                                        <i class="fas fa-star {% if i < review.rating %}text-warning{% else %}text-tertiary{% endif %}"></i>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                <span class="review-date">{{ review.created_at.strftime('%B %d, %Y') }}</span>
+                            </div>
+                            <p class="review-content">{{ review.content }}</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </section>
+            </div>
+
+            <aside class="content-sidebar">
+                <!-- Creator Info -->
+                <div class="card creator-card pattern-border">
+                    <div class="creator-header">
+                        <img src="{{ event.creator.avatar_url }}" alt="{{ event.creator.name }}" class="avatar">
+                        <div class="creator-info">
+                            <h3>{{ event.creator.name }}</h3>
+                            <p>Event Organizer</p>
+                        </div>
+                    </div>
+                    <p class="creator-bio">{{ event.creator.bio[:200] }}...</p>
+                    <div class="creator-stats">
+                        <div class="stat">
+                            <span class="stat-value">{{ event.creator.follower_count }}</span>
+                            <span class="stat-label">Followers</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-value">{{ event.creator.event_count }}</span>
+                            <span class="stat-label">Events</span>
+                        </div>
+                    </div>
+                    <a href="{{ url_for('creator.profile', username=event.creator.username) }}" class="btn btn-secondary w-full">
+                        View Profile
+                    </a>
+                </div>
+
+                <!-- Location -->
+                {% if event.venue %}
+                <div class="card venue-card">
+                    <h3>Location</h3>
+                    <div class="venue-info">
+                        <h4>{{ event.venue.name }}</h4>
+                        <p>{{ event.venue.address }}</p>
+                        <div class="venue-map">
+                            <!-- Add map integration here -->
+                        </div>
+                        <a href="{{ event.venue.directions_url }}" target="_blank" class="btn btn-text w-full">
+                            <i class="fas fa-directions"></i> Get Directions
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Share -->
+                <div class="card share-card">
+                    <h3>Share Event</h3>
+                    <div class="share-buttons">
+                        <button class="btn btn-text" onclick="shareEvent('facebook')">
+                            <i class="fab fa-facebook"></i> Facebook
+                        </button>
+                        <button class="btn btn-text" onclick="shareEvent('twitter')">
+                            <i class="fab fa-twitter"></i> Twitter
+                        </button>
+                        <button class="btn btn-text" onclick="shareEvent('linkedin')">
+                            <i class="fab fa-linkedin"></i> LinkedIn
+                        </button>
+                    </div>
+                </div>
+            </aside>
+        </div>
+    </div>
+</div>
+
+<!-- Ticket Modal -->
+<div id="ticketModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Get Tickets</h2>
+            <button class="modal-close" onclick="closeTicketModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="ticketForm" onsubmit="purchaseTickets(event)">
+                <div class="form-group">
+                    <label for="ticketQuantity">Number of Tickets</label>
+                    <select id="ticketQuantity" class="form-input" required>
+                        {% for i in range(1, min(event.max_tickets_per_person, event.tickets_remaining) + 1) %}
+                        <option value="{{ i }}">{{ i }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="ticket-summary">
+                    <div class="summary-item">
+                        <span>Price per ticket</span>
+                        <span>${{ "%.2f"|format(event.price) }}</span>
+                    </div>
+                    <div class="summary-item">
+                        <span>Service fee</span>
+                        <span>${{ "%.2f"|format(event.service_fee) }}</span>
+                    </div>
+                    <div class="summary-total">
+                        <span>Total</span>
+                        <span id="totalPrice">${{ "%.2f"|format(event.price + event.service_fee) }}</span>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-full">
+                    Complete Purchase
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+.event-detail {
+    margin-top: -2rem;
+}
+
+.event-header {
+    background-color: var(--bg-secondary);
+    padding: var(--space-xl) 0;
+    margin-bottom: var(--space-xl);
+}
+
+.event-hero {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-xl);
+    align-items: center;
+}
+
+.event-meta {
+    display: flex;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-md);
+}
+
+.event-title {
+    font-size: 2.5rem;
+    margin-bottom: var(--space-lg);
+}
+
+.event-datetime {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-xl);
+}
+
+.datetime-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    color: var(--text-secondary);
+}
+
+.event-actions {
+    display: flex;
+    gap: var(--space-md);
+    align-items: center;
+}
+
+.ticket-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.ticket-price {
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+.tickets-remaining {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+}
+
+.event-image img {
+    width: 100%;
+    border-radius: var(--radius-lg);
+}
+
+.event-content {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: var(--space-xl);
+}
+
+.event-section {
+    margin-bottom: var(--space-xl);
+}
+
+.schedule-timeline {
+    position: relative;
+    padding-left: var(--space-xl);
+}
+
+.timeline-item {
+    position: relative;
+    padding-bottom: var(--space-xl);
+}
+
+.timeline-item::before {
+    content: '';
+    position: absolute;
+    left: calc(-1 * var(--space-xl));
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background-color: var(--border-light);
+}
+
+.timeline-item::after {
+    content: '';
+    position: absolute;
+    left: calc(-1 * var(--space-xl) - 4px);
+    top: 8px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background-color: var(--color-primary);
+}
+
+.performers-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: var(--space-lg);
+}
+
+.performer-card {
+    display: flex;
+    gap: var(--space-md);
+    padding: var(--space-md);
+    background-color: var(--bg-tertiary);
+    border-radius: var(--radius-md);
+}
+
+.performer-image {
+    width: 100px;
+    height: 100px;
+    border-radius: var(--radius-md);
+    object-fit: cover;
+}
+
+.review-card {
+    padding: var(--space-lg);
+    border-bottom: 1px solid var(--border-light);
+}
+
+.review-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    margin-bottom: var(--space-md);
+}
+
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+}
+
+.modal-content {
+    position: relative;
+    width: 90%;
+    max-width: 500px;
+    margin: 2rem auto;
+    background-color: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    padding: var(--space-lg);
+}
+
+.ticket-summary {
+    background-color: var(--bg-tertiary);
+    padding: var(--space-lg);
+    border-radius: var(--radius-md);
+    margin: var(--space-lg) 0;
+}
+
+.summary-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: var(--space-sm);
+    color: var(--text-secondary);
+}
+
+.summary-total {
+    display: flex;
+    justify-content: space-between;
+    margin-top: var(--space-md);
+    padding-top: var(--space-md);
+    border-top: 1px solid var(--border-light);
+    font-weight: 600;
+}
+
+@media (max-width: 1024px) {
+    .event-content {
+        grid-template-columns: 1fr;
+    }
+    
+    .content-sidebar {
+        order: -1;
+    }
+}
+
+@media (max-width: 768px) {
+    .event-hero {
+        grid-template-columns: 1fr;
+    }
+    
+    .event-image {
+        order: -1;
+    }
+    
+    .event-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .performers-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function showTicketModal() {
+    document.getElementById('ticketModal').style.display = 'block';
+}
+
+function closeTicketModal() {
+    document.getElementById('ticketModal').style.display = 'none';
+}
+
+function purchaseTickets(event) {
+    event.preventDefault();
+    // Implement ticket purchase functionality
+}
+
+function shareEvent(platform) {
+    // Implement share functionality
+}
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+    if (event.target == document.getElementById('ticketModal')) {
+        closeTicketModal();
+    }
+}
+
+// Update total price when quantity changes
+document.getElementById('ticketQuantity').addEventListener('change', function(e) {
+    const quantity = parseInt(e.target.value);
+    const pricePerTicket = {{ event.price }};
+    const serviceFee = {{ event.service_fee }};
+    const total = (pricePerTicket + serviceFee) * quantity;
+    document.getElementById('totalPrice').textContent = `$${total.toFixed(2)}`;
+});
+</script>
+{% endblock %}

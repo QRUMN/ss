@@ -1,0 +1,394 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="creator-profile">
+    <div class="profile-header pattern-border">
+        <div class="profile-cover" style="background-image: url('{{ creator.cover_image_url }}')">
+            <div class="container">
+                <div class="profile-info">
+                    <img src="{{ creator.avatar_url }}" alt="{{ creator.name }}" class="avatar avatar-xl">
+                    <div class="profile-text">
+                        <h1>{{ creator.name }}</h1>
+                        <p class="profile-tagline">{{ creator.tagline }}</p>
+                        <div class="profile-stats">
+                            <div class="stat">
+                                <span class="stat-value">{{ creator.follower_count }}</span>
+                                <span class="stat-label">Followers</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-value">{{ creator.member_count }}</span>
+                                <span class="stat-label">Members</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-value">{{ creator.event_count }}</span>
+                                <span class="stat-label">Events</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="profile-actions">
+                        {% if not current_user.is_following(creator) %}
+                        <button class="btn btn-primary" onclick="followCreator('{{ creator.id }}')">
+                            <i class="fas fa-user-plus"></i> Follow
+                        </button>
+                        {% else %}
+                        <button class="btn btn-secondary" onclick="unfollowCreator('{{ creator.id }}')">
+                            <i class="fas fa-user-minus"></i> Unfollow
+                        </button>
+                        {% endif %}
+                        <button class="btn btn-secondary">
+                            <i class="fas fa-share"></i> Share
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="profile-nav">
+        <div class="container">
+            <nav class="tabs">
+                <a href="#about" class="tab active">About</a>
+                <a href="#events" class="tab">Events</a>
+                <a href="#posts" class="tab">Posts</a>
+                <a href="#membership" class="tab">Membership</a>
+            </nav>
+        </div>
+    </div>
+
+    <div class="profile-content">
+        <div class="container">
+            <div class="content-grid">
+                <!-- Main Content -->
+                <div class="main-content">
+                    <!-- About Section -->
+                    <section id="about" class="profile-section">
+                        <div class="card">
+                            <h2>About {{ creator.name }}</h2>
+                            <div class="rich-text">
+                                {{ creator.bio|safe }}
+                            </div>
+                            {% if creator.website or creator.social_links %}
+                            <div class="creator-links">
+                                {% if creator.website %}
+                                <a href="{{ creator.website }}" class="btn btn-text" target="_blank">
+                                    <i class="fas fa-globe"></i> Website
+                                </a>
+                                {% endif %}
+                                {% for platform, url in creator.social_links.items() %}
+                                <a href="{{ url }}" class="btn btn-text" target="_blank">
+                                    <i class="fab fa-{{ platform.lower() }}"></i> {{ platform }}
+                                </a>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </section>
+
+                    <!-- Events Section -->
+                    <section id="events" class="profile-section">
+                        <h2>Upcoming Events</h2>
+                        <div class="events-grid">
+                            {% for event in upcoming_events %}
+                            <div class="event-card pattern-border">
+                                <div class="event-image">
+                                    <img src="{{ event.image_url }}" alt="{{ event.title }}">
+                                    {% if event.is_members_only %}
+                                    <span class="badge badge-secondary">Members Only</span>
+                                    {% endif %}
+                                </div>
+                                <div class="event-content">
+                                    <div class="event-meta">
+                                        <span class="event-date">{{ event.start_date.strftime('%b %d, %Y') }}</span>
+                                        <span class="event-time">{{ event.start_time.strftime('%I:%M %p') }}</span>
+                                    </div>
+                                    <h3>{{ event.title }}</h3>
+                                    <p>{{ event.description[:150] }}...</p>
+                                    <div class="event-footer">
+                                        <span class="event-price">
+                                            {% if event.price == 0 %}Free{% else %}${{ "%.2f"|format(event.price) }}{% endif %}
+                                        </span>
+                                        <a href="{{ url_for('events.detail', event_id=event.id) }}" class="btn btn-primary">
+                                            Register
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </section>
+
+                    <!-- Posts Section -->
+                    <section id="posts" class="profile-section">
+                        <h2>Latest Posts</h2>
+                        <div class="posts-grid">
+                            {% for post in posts %}
+                            <div class="post-card">
+                                {% if post.image_url %}
+                                <img src="{{ post.image_url }}" alt="" class="post-image">
+                                {% endif %}
+                                <div class="post-content">
+                                    <div class="post-meta">
+                                        <span class="post-date">{{ post.created_at.strftime('%b %d, %Y') }}</span>
+                                        {% if post.is_members_only %}
+                                        <span class="badge badge-secondary">Members Only</span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="post-text">{{ post.content }}</div>
+                                    <div class="post-actions">
+                                        <button class="btn btn-text">
+                                            <i class="far fa-heart"></i>
+                                            <span>{{ post.likes_count }}</span>
+                                        </button>
+                                        <button class="btn btn-text">
+                                            <i class="far fa-comment"></i>
+                                            <span>{{ post.comments_count }}</span>
+                                        </button>
+                                        <button class="btn btn-text">
+                                            <i class="far fa-share-square"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </section>
+                </div>
+
+                <!-- Sidebar -->
+                <aside class="profile-sidebar">
+                    <!-- Membership Tiers -->
+                    <div class="card membership-card pattern-border">
+                        <h3>Join the Community</h3>
+                        <p>Support {{ creator.name }} and get exclusive benefits</p>
+                        
+                        {% for tier in membership_tiers %}
+                        <div class="tier-option">
+                            <div class="tier-header">
+                                <h4>{{ tier.name }}</h4>
+                                <span class="tier-price">${{ "%.2f"|format(tier.price) }}/month</span>
+                            </div>
+                            <p class="tier-description">{{ tier.description }}</p>
+                            <ul class="tier-benefits">
+                                {% for benefit in tier.benefits %}
+                                <li><i class="fas fa-check"></i> {{ benefit }}</li>
+                                {% endfor %}
+                            </ul>
+                            <button class="btn btn-primary w-full">Join {{ tier.name }}</button>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Recent Supporters -->
+                    <div class="card supporters-card">
+                        <h3>Recent Supporters</h3>
+                        <div class="supporters-list">
+                            {% for supporter in recent_supporters %}
+                            <div class="supporter-item">
+                                <img src="{{ supporter.avatar_url }}" alt="{{ supporter.name }}" class="avatar avatar-sm">
+                                <div class="supporter-info">
+                                    <span class="supporter-name">{{ supporter.name }}</span>
+                                    <span class="supporter-tier">{{ supporter.tier_name }}</span>
+                                </div>
+                                <span class="supporter-time">{{ supporter.joined_at.strftime('%b %d') }}</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </aside>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+.creator-profile {
+    margin-top: -2rem;
+}
+
+.profile-header {
+    background-color: var(--bg-secondary);
+    margin-bottom: var(--space-xl);
+}
+
+.profile-cover {
+    height: 300px;
+    background-size: cover;
+    background-position: center;
+    position: relative;
+}
+
+.profile-cover::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 50%;
+    background: linear-gradient(to bottom, transparent, rgba(0, 0, 0, 0.8));
+}
+
+.profile-info {
+    position: absolute;
+    bottom: var(--space-lg);
+    left: 0;
+    right: 0;
+    color: white;
+    z-index: 1;
+    display: flex;
+    align-items: flex-end;
+    gap: var(--space-lg);
+}
+
+.avatar-xl {
+    width: 120px;
+    height: 120px;
+    border: 4px solid var(--bg-primary);
+}
+
+.profile-text {
+    flex: 1;
+}
+
+.profile-tagline {
+    color: var(--text-secondary);
+    margin: var(--space-sm) 0;
+}
+
+.profile-stats {
+    display: flex;
+    gap: var(--space-lg);
+    margin-top: var(--space-md);
+}
+
+.profile-nav {
+    background-color: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-light);
+    margin-bottom: var(--space-xl);
+}
+
+.tabs {
+    display: flex;
+    gap: var(--space-lg);
+}
+
+.tab {
+    padding: var(--space-md) 0;
+    color: var(--text-secondary);
+    border-bottom: 2px solid transparent;
+}
+
+.tab.active {
+    color: var(--text-primary);
+    border-bottom-color: var(--color-primary);
+}
+
+.content-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: var(--space-xl);
+}
+
+.profile-section {
+    margin-bottom: var(--space-xl);
+}
+
+.tier-option {
+    padding: var(--space-lg);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--space-md);
+}
+
+.tier-benefits {
+    list-style: none;
+    margin: var(--space-md) 0;
+}
+
+.tier-benefits li {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-sm);
+}
+
+.supporter-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-sm) 0;
+}
+
+.supporter-info {
+    flex: 1;
+}
+
+.supporter-name {
+    display: block;
+    font-weight: 500;
+}
+
+.supporter-tier {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+@media (max-width: 1024px) {
+    .content-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .profile-sidebar {
+        order: -1;
+    }
+}
+
+@media (max-width: 768px) {
+    .profile-info {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+    
+    .profile-actions {
+        margin-top: var(--space-md);
+    }
+    
+    .profile-stats {
+        justify-content: center;
+    }
+    
+    .tabs {
+        overflow-x: auto;
+        padding: 0 var(--space-md);
+    }
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function followCreator(creatorId) {
+    // Implement follow functionality
+}
+
+function unfollowCreator(creatorId) {
+    // Implement unfollow functionality
+}
+
+// Tab navigation
+document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', (e) => {
+        e.preventDefault();
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        
+        const targetId = tab.getAttribute('href').substring(1);
+        document.querySelectorAll('.profile-section').forEach(section => {
+            section.style.display = section.id === targetId ? 'block' : 'none';
+        });
+    });
+});
+</script>
+{% endblock %}
